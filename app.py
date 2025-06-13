@@ -89,21 +89,21 @@ st.markdown("""
             background-color: #4CAF50;
             padding: 3px 10px;
             border-radius: 5px;
-            font-weight: 600;
+            font-weight: 600;                     
         }
         .confidence-medium {
             color: black;
             background-color: #FFC107;
             padding: 3px 10px;
             border-radius: 5px;
-            font-weight: 600;
+            font-weight: 600;            
         }
         .confidence-low {
             color: white;
             background-color: #F44336;
             padding: 3px 10px;
             border-radius: 5px;
-            font-weight: 600;
+            font-weight: 600;            
         }
         
         
@@ -140,17 +140,28 @@ for noc_code in top_k_noc_code_descr_map:
     supported_noc_code_list = supported_noc_code_list + "- NOC " + str(noc_code).zfill(5) + " - " + top_k_noc_code_descr_map[noc_code] + "\n"
 
 def truncate_string(text, max_length=30):
-  if len(text) <= max_length:
+  if len(text) <= max_length:    
     return text
   else:
     return text[:max_length] + "..."
 
 jobData = {}
 
+if 'job_title' not in st.session_state:
+    st.session_state.job_title = ""
+
+if 'job_description' not in st.session_state:
+    st.session_state.job_description = ""
+
+def OnSubmitFormClear():
+    st.session_state.job_title = ""
+    st.session_state.job_description = ""
+
+
 with st.form("job_data_form"):
     
     # User input
-    txt_jobtitle = st.text_input("Job Title*", placeholder="e.g. Software Engineer")   
+    job_title = st.text_input("Job Title*", key= "job_title", placeholder="e.g. Software Engineer")   
 
     st.markdown("""
         <div style="background-color:#e7f3fe; padding:10px 15px; border-left: 6px solid #2196F3; border-radius:6px; color:#084298;">
@@ -158,21 +169,26 @@ with st.form("job_data_form"):
         </div>
         """, unsafe_allow_html=True)
 
-    txt_jobdescription = st.text_area("Job Description / Resume*", height=200, placeholder="Paste your job responsibilities, tools, or keywords...")
+    job_description  = st.text_area("Job Description / Resume*", key="job_description", height=200, placeholder="Paste your job responsibilities, tools, or keywords...")
 
-    # Submit Button
-    if st.form_submit_button("🔎 Predict NOC Code"):
+    submitBtn, clearBtn = st.columns([1,1])
 
-        if not txt_jobtitle.strip() or not txt_jobdescription.strip():
-            st.error("⚠️ Please fill out both the Job Title and Job Description fields.")
+    with submitBtn:
+        submitResult = st.form_submit_button("🔎 Predict NOC Code")
 
-        else:
-            jobData["job_title"] = txt_jobtitle
-            jobData['job_details'] = txt_jobdescription
+    with clearBtn:
+        clearResult = st.form_submit_button("🧹 Clear",on_click=OnSubmitFormClear)
+   
+    
+    if clearResult:
+        st.write("")
 
-
-
-if len(jobData) > 0:            
+    if submitResult:
+               
+        jobData['job_title'] = job_title.strip()
+        jobData['job_details'] = job_description.strip()       
+            
+        if job_title.strip() and job_description.strip():                        
 
             vectorizer, model, label_encoder = load_model()
             combine_text = jobData['job_title'] + " " + jobData['job_details']
@@ -181,29 +197,20 @@ if len(jobData) > 0:
 
             top_indices = y_proba.argsort()[-3:][::-1]
             top_nocs = label_encoder.inverse_transform(top_indices)
-            top_scores = y_proba[top_indices]                        
-            
+            top_scores = y_proba[top_indices]
+
             st.markdown("""
-            <div style="background-color:#fff3cd; padding:15px 20px; border-left: 6px solid #ffecb5; border-radius:8px; color:#856404;">
-                <strong>⚠️ Note:</strong> This model currently supports predictions for the <strong>top 100 most in-demand NOC codes</strong> in Canada.  
-                You may not receive accurate results for less common job types or improper job description.<br>
-                We’re working on improving and expanding coverage to include all NOC codes soon.
-            </div>
-            """, unsafe_allow_html=True)
+                <div style="background-color:#fff3cd; padding:15px 20px; border-left: 6px solid #ffecb5; border-radius:8px; color:#856404;">
+                    <strong>⚠️ Note:</strong> This model currently supports predictions for the <strong>top 100 most in-demand NOC codes</strong> in Canada.  
+                    You may not receive accurate results for less common job types or improper job description.<br>
+                    We’re working on improving and expanding coverage to include all NOC codes soon.
+                </div>
+                """, unsafe_allow_html=True)
 
             st.write("")
-
-            # This is where you’d run the prediction logic
-            #st.success("Prediction complete.")
-
-
-            st.markdown(f"### 🏁 Predicted {top_nocs[0]} – {truncate_string(top_k_noc_code_descr_map[(int)(top_nocs[0][4:])])}")
-            #st.markdown(f"Confidence: <span class='confidence-high'>{top_scores[0]*100:.2f}%</span>", unsafe_allow_html=True)
-            #st.markdown("""
-            #⚠️ This prediction was made with low confidence.<br>
-            #Please review the job description and alternate matches below:
-            #""", unsafe_allow_html=True)
-
+            
+            st.markdown(f"#### 🏁 Predicted {top_nocs[0]} – {truncate_string(top_k_noc_code_descr_map[(int)(top_nocs[0][4:])]).title()}")
+            
             noc_code_pred_results = []            
 
             noc_code_predictions = zip(top_nocs, top_scores)    
@@ -216,20 +223,47 @@ if len(jobData) > 0:
                 noc_code_pred_result['confidence'] = score * 100                
                 noc_code_pred_results.append(noc_code_pred_result)
             
-            
-           
             # Generate markdown HTML
             markdown_lines = []
             for idx, item in enumerate(noc_code_pred_results, start=1):                
                 conf_percent = item["confidence"]
                 confidence_class = get_confidence_class(idx)
-                line = f"{idx}. {item['noc']} – {item['title']} <span class='{confidence_class}'>{conf_percent:.2f} %</span><br>"
+                line = f"{idx}. {item['noc']} – {truncate_string(item['title'],60).title()} <span class='{confidence_class}'>{conf_percent:.2f} %</span><br>"
                 markdown_lines.append(line)         
 
-            markdown_result = "\n".join(markdown_lines)          
+            markdown_result = "\n".join(markdown_lines)
 
             st.markdown("#### 🏆 Top 3 Predictions")
-            st.markdown(markdown_result, unsafe_allow_html=True)
+                #st.markdown(markdown_result, unsafe_allow_html=True)
+
+            table_html = """
+                <table style="width:100%; border-collapse: separate; border-spacing: 1px 1px;">
+                <thead>
+                <tr style="text-align:left;">
+                    <th width="20%">NOC Code</th>
+                    <th>Job Title</th>
+                    <th style="text-align:right;">Confidence</th>
+                </tr>
+                </thead>
+                <tbody>
+                """
+            indx = 0
+            for noc, score in zip(top_nocs, top_scores):
+                indx = indx + 1
+                title = truncate_string(top_k_noc_code_descr_map[int(noc[4:])],50).title()
+                conf = f"{score * 100:.2f}%"
+                confidence_class = get_confidence_class(indx)
+                table_html += f"""
+                <tr>
+                    <td>{noc}</td>
+                    <td>{title}</td>
+                    <td class='{confidence_class}'><strong>{conf}</strong></td>
+                </tr>
+                """
+
+            table_html += "</tbody></table>"
+
+            st.markdown(table_html, unsafe_allow_html=True)
 
             fig = plot_predictions(top_nocs, top_scores)
             st.plotly_chart(fig, use_container_width=True)
@@ -237,4 +271,11 @@ if len(jobData) > 0:
             with st.expander("📋 View Supported NOC Codes (Top 100)"):
                 st.markdown(f"""
                     { supported_noc_code_list }
-                    """)
+                    """)           
+        
+        else:
+            st.error("⚠️ Please fill out both the Job Title and Job Description fields.")
+
+
+    
+                    
