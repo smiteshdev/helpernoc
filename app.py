@@ -110,6 +110,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+
 # Title & Subtitle
 st.markdown('<div class="main-title">🔍 Canadian NOC Code Predictor</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Predict the most suitable NOC (National Occupation Classification) code based on your job title and description.</div>', unsafe_allow_html=True)
@@ -276,6 +277,17 @@ with st.form("job_data_form"):
         else:
             st.error("⚠️ Please fill out both the Job Title and Job Description fields.")
 
+with st.container():
+    st.markdown("""
+    <div style="border: 1px solid #00416A; border-radius: 10px; padding: 15px; background-color: #f0f8ff;">
+        <h4>📬 Enquiries</h4>
+        <p>
+        <strong>Name:</strong> Smitesh Tamboli<br>
+        <strong>Email:</strong> <a href='mailto:smitesh.dev@gmail.com'>smitesh.dev@gmail.com</a><br><br>
+        I welcome collaboration with RCIC agents, consultants, and tech partners interested in AI-based NOC Code prediction tools.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
     
                     
