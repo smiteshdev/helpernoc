@@ -13,10 +13,10 @@ def load_model():
 
     return vectorizer, model, label_encoder
 
-df_top_k_noc_list = pd.read_csv('./top_100_noc_codes_2021.csv')
+df_top_k_noc_list = pd.read_csv('./noc_code_2021_mapper.csv')
 top_k_noc_code_descr_map = {}
 
-for noc_code, desc in zip(df_top_k_noc_list['Code - NOC 2021 V1.0'],df_top_k_noc_list['Class title']):
+for noc_code, desc in zip(df_top_k_noc_list['noc_code'],df_top_k_noc_list['noc_title']):
     top_k_noc_code_descr_map[noc_code] = desc
 
 
